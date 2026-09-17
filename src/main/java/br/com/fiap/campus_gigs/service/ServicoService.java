@@ -30,6 +30,7 @@ public class ServicoService {
         servico.setCategoria(request.categoria());
         servico.setPreco(request.preco());
         servico.setSituacao(SituacaoServico.ATIVO);
+
         return ServicoResponse.from(servicoRepository.save(servico));
     }
 
