@@ -23,6 +23,7 @@ public class ServicoService {
         this.servicoRepository = servicoRepository;
     }
 
+    @Transactional
     public ServicoResponse cadastrar(ServicoRequest request, Usuario prestador) {
         Servico servico = new Servico();
         servico.setPrestador(prestador);
@@ -40,6 +41,7 @@ public class ServicoService {
         return servicoRepository.findAll().stream().map(ServicoResponse::from).toList();
     }
 
+    @Transactional
     public ServicoResponse encerrar(Long id, Usuario usuarioLogado) {
         Servico servico = buscarEntidadePorId(id);
 
