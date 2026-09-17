@@ -44,6 +44,13 @@ A API estará disponível em `http://localhost:8080`.
 .\gradlew.bat test
 ```
 
+### 2.4 Usuário Administrador Padrão
+
+A migration `V3__seed_admin.sql` cria automaticamente uma conta com papel `ADMIN` para testes de permissão:
+
+- **E-mail:** `admin@campusgigs.br`
+- **Senha:** `admin123`
+
 ## 3. Principais Endpoints da API
 
 ### Autenticação e Usuários
@@ -150,6 +157,31 @@ try {
 ```
 Resultado: `403 Forbidden` — Pedro não é o dono do serviço e não pode encerrá-lo.
 
+**Evidência de ADMIN encerrando serviço de terceiros (sucesso):**
+
+Login com a conta administrativa (seed da migration `V3`) e encerramento do mesmo serviço da Maria:
+```powershell
+$respAdmin = Invoke-RestMethod -Uri http://localhost:8080/auth/login -Method POST -ContentType "application/json" -Body '{"email": "admin@campusgigs.br", "senha": "admin123"}'
+$tokenAdmin = $respAdmin.token
+
+Invoke-RestMethod -Uri http://localhost:8080/servicos/1/encerrar -Method PATCH -Headers @{Authorization = "Bearer $tokenAdmin"}
+```
+Resultado: `200 OK`
+```json
+{
+  "id": 1,
+  "prestadorId": 1,
+  "prestadorNome": "Maria Souza",
+  "titulo": "Aulas de Java",
+  "descricao": "Reforco POO",
+  "categoria": "Monitoria",
+  "preco": 50.00,
+  "situacao": "ENCERRADO",
+  "criadoEm": "2026-09-17T07:49:36.409773"
+}
+```
+Isso comprova a segunda metade da regra de autorização: um ADMIN encerra qualquer serviço, mesmo não sendo o prestador dono.
+
 **Regra de Negócio: Proibição de Contratar o Próprio Serviço:**
 ```powershell
 try {
@@ -222,7 +254,7 @@ Resultado: `200 OK`, cidade e UF reconsultados e atualizados no serviço externo
 
 **CP3:** Emissão e validação de tokens JWT com filtro customizado (`JwtAuthenticationFilter`, baseado em `OncePerRequestFilter`), garantindo autenticação prévia em rotas restritas. Um `AuthenticationEntryPoint` customizado distingue corretamente requisições sem autenticação (401) de requisições sem permissão (403).
 
-**CP4:** Modelagem do domínio de Serviços e Contratações aplicando controle estrito de permissões: apenas o prestador dono ou um usuário ADMIN pode encerrar um serviço; contratações bloqueiam o contratante de contratar o próprio serviço ou um serviço fora da situação ativa.
+**CP4:** Modelagem do domínio de Serviços e Contratações aplicando controle estrito de permissões: apenas o prestador dono ou um usuário ADMIN pode encerrar um serviço; contratações bloqueiam o contratante de contratar o próprio serviço ou um serviço fora da situação ativa. Adicionada migration `V3__seed_admin.sql` para permitir testar o cenário de ADMIN encerrando serviço de terceiros; durante esse teste identificamos e corrigimos um `LazyInitializationException` no `ServicoService` (métodos `cadastrar` e `encerrar` sem `@Transactional`, causando falha ao acessar o prestador via fetch lazy fora da sessão do Hibernate).
 
 **CP5:** Implementação de cliente declarativo Spring HTTP (`@HttpExchange` / `@GetExchange`) integrado ao ViaCEP, com timeout de conexão (3s) e leitura (4s) configurados explicitamente. Falhas do serviço externo (indisponibilidade, lentidão, CEP inexistente) são interceptadas e convertidas em respostas claras e centralizadas, evitando que o cadastro fique silenciosamente incompleto.
 
