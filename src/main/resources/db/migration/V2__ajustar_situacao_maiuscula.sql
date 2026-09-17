@@ -1,0 +1,1 @@
+UPDATE usuarios SET papel = UPPER(papel);
