@@ -10,6 +10,7 @@ import br.com.fiap.campus_gigs.repository.ServicoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,6 +35,7 @@ public class ServicoService {
         return ServicoResponse.from(servicoRepository.save(servico));
     }
 
+    @Transactional(readOnly = true)
     public List<ServicoResponse> listar() {
         return servicoRepository.findAll().stream().map(ServicoResponse::from).toList();
     }
